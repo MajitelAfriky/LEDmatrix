@@ -3,12 +3,12 @@ from bs4 import BeautifulSoup
 import re
 import serial
 import time
-import simpleaudio as sa
+#import simpleaudio as sa
  
 old1 = 0
 old2 = 0
  
-wave_obj = sa.WaveObject.from_wave_file("gol.wav")
+#wave_obj = sa.WaveObject.from_wave_file("gol.wav")
  
 while True:
     url = "https://online.sport.cz/detail/81106/#hp-sport"
@@ -25,7 +25,7 @@ while True:
         print(tag_content)
  
         if(old1 != numbers[0] or old2 != numbers[1]):
-            play_obj = wave_obj.play()
+#           play_obj = wave_obj.play()
             old1 = numbers[0]
             old2 = numbers[1]
  

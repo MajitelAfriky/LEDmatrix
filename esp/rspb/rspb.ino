@@ -17,5 +17,4 @@ void loop() {
     // Zobrazení dat na sériovém monitoru
     Serial.print(data);
   }
-
 }

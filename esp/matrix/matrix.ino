@@ -1,7 +1,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoMatrix.h>
 #include <Adafruit_NeoPixel.h>
-// #0000000000000000010100010111001001110110011111000111110001010100
+// #0000000000000000010100010111001001110110011111000111110001010100#60d670
 #ifndef PSTR
  #define PSTR // Prevent compiler error
 #endif
@@ -16,8 +16,10 @@ Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, 1, 1, PIN,
 
 uint16_t color = matrix.Color(255, 0, 0); // Red color for text
 
-String displayText = "....."; // Default text
+String displayText = "."; // Default text
 String hexColor;
+
+int pip = 1;
 
 void setup() {
   Serial.begin(115200);
@@ -28,13 +30,37 @@ void setup() {
   matrix.setBrightness(40);
   matrix.setTextColor(color);
 
-  Serial.println("Setup complete, waiting for data...");
+  pinMode(10, INPUT_PULLUP);
+  pinMode(2, OUTPUT);
 }
 
 int x = matrix.width();
 String dataBuffer; // Buffer to store incoming data
 
 void loop() {
+  int lever = digitalRead(10);
+  if (lever == 0 ) {
+    if (pip == 1) {
+      tone(2, 1000, 250);
+      delay(250);
+      tone(2, 1500, 250);
+      delay(250);
+    }
+    source();
+    pip = 0;
+  } else {
+    if (pip == 0) {
+    tone(2, 1000, 250);
+    delay(250);
+    tone(2, 500, 250);
+    matrix.fillScreen(0);
+    matrix.show();
+    }
+    pip = 1;
+  }
+}
+
+void source() {
   while (Serial1.available()) {
     char c = Serial1.read();
     if (c == '\n') { // Pokud přijde nový řádek, zpracuj data
@@ -66,57 +92,36 @@ void loop() {
       matrix.show();
     }
     if (displayText.startsWith("#", 0)) {
-      hexColor = displayText.substring(65);
-      long number = (long) strtol( &hexColor[1], NULL, 16);
-      int r = number >> 16;
-      int g = number >> 8 & 0xFF;
-      int b = number & 0xFF;
-    
-
-
-      for (int i = 1; i <= 64; i++) {
-        // Výpočet souřadnic z indexu
-        int Yrow = (i - 1) / 8;
-        int Xcol = (i - 1) % 8;
-
-        // Přečtení bitu na aktuální pozici
-        char bit = displayText.charAt(i);
-
-        if (bit == '1') {
-          matrix.drawPixel(Xcol, Yrow, matrix.Color(r, g, b));
-          Serial.print(Xcol);
-          Serial.print("|");
-          Serial.println(Yrow);
-          matrix.show();
-        }
-        delay(30);
-      }
+      client();
     }
   } else {
     text();
   }
 }
 
-/*void text() {
-  for (int i = 0; i < displayText.length(); i++) {
+void client() {
+  hexColor = displayText.substring(65);
+  long number = (long) strtol( &hexColor[1], NULL, 16);
+  int r = number >> 16;
+  int g = number >> 8 & 0xFF;
+  int b = number & 0xFF;
 
-    Serial.print(i);
-    Serial.print("/");
-    Serial.println(displayText.length());
-
-    matrix.fillScreen(0);
-    matrix.setCursor(x, 0);
-    matrix.print(displayText); // Display the received text
-    x -= 1; // Move text to the left¨
-    int textWidth = displayText.length() * 8; // Assuming each character is 8 pixels wide
-
-    if (x < -textWidth) {
-      x = matrix.width(); // Reset position if text has scrolled completely
+  for (int i = 1; i <= 64; i++) {
+    // Výpočet souřadnic z indexu
+    int Yrow = (i - 1) / 8;
+    int Xcol = (i - 1) % 8;
+    // Přečtení bitu na aktuální pozici
+    char bit = displayText.charAt(i);
+    if (bit == '1') {
+      matrix.drawPixel(Xcol, Yrow, matrix.Color(r, g, b));
+      Serial.print(Xcol);
+      Serial.print("|");
+      Serial.println(Yrow);
+      
     }
-    matrix.show();
-    delay(100);
   }
-}*/
+  matrix.show();
+}
 
 void text() {
   matrix.fillScreen(0); // Vyčistíme matici
@@ -130,15 +135,12 @@ void text() {
   for (int i = 0; i < textWidth + matrix.width(); i++) {
     matrix.fillScreen(0); // Vyčistíme matici
     matrix.setCursor(x - i, 0); // Nastavíme pozici kurzoru pro text
-
     if (x - i < -textWidth) {
       x = matrix.width(); // Resetujeme pozici, pokud text překročí matici
     }
-
     matrix.print(displayText); // Zobrazíme text
     matrix.show(); // Aktualizujeme matici
     delay(100); // Čekáme 100 ms
   }
-
   delay(displayTime); // Čekáme po dobu odpovídající délce textu
 }

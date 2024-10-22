@@ -16,11 +16,16 @@ Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, 1, 1, PIN,
 
 uint16_t color = matrix.Color(255, 0, 0); // Red color for text
 
-String displayText = "."; // Default text
+String displayText = "."; // Default text               // $police
 String hexColor;
 
 int pip = 1;
-
+unsigned long startBlue;
+unsigned long startRed;
+unsigned long currentMillis;
+bool b = true;
+bool r = false;
+int i = 0;
 void setup() {
   Serial.begin(115200);
   Serial1.begin(9600); // UART1 for ESP-01
@@ -32,6 +37,8 @@ void setup() {
 
   pinMode(10, INPUT_PULLUP);
   pinMode(2, OUTPUT);
+  startBlue = millis();
+  startRed = millis();
 }
 
 int x = matrix.width();
@@ -91,6 +98,9 @@ void source() {
       matrix.fillScreen(matrix.Color(0, 0, 255));
       matrix.show();
     }
+    if (displayText.startsWith("police", 1)) {
+      police();
+    }
     if (displayText.startsWith("#", 0)) {
       client();
     }
@@ -121,6 +131,53 @@ void client() {
     }
   }
   matrix.show();
+}
+
+void police() {
+  currentMillis = millis();
+
+  while (i < 20) {
+    currentMillis = millis();
+    if (currentMillis - startBlue >= 50) {
+    if (b == true){
+      matrix.drawFastVLine(0, 0, 8, matrix.Color(0, 0, 255));
+      matrix.drawFastVLine(1, 0, 8, matrix.Color(0, 0, 255));
+      matrix.drawFastVLine(2, 0, 8, matrix.Color(0, 0, 255));
+      matrix.drawFastVLine(3, 0, 8, matrix.Color(0, 0, 255));
+    } else {
+      matrix.drawFastVLine(0, 0, 8, 0);
+      matrix.drawFastVLine(1, 0, 8, 0);
+      matrix.drawFastVLine(2, 0, 8, 0);
+      matrix.drawFastVLine(3, 0, 8, 0);
+    }
+    matrix.show();
+    b = !b;
+    startBlue = millis();
+    i++;
+    }
+  }
+
+  if (currentMillis - startRed >= 50) {
+  if (r == true){
+    matrix.drawFastVLine(4, 0, 8, matrix.Color(255, 0, 0));
+    matrix.drawFastVLine(5, 0, 8, matrix.Color(255, 0, 0));
+    matrix.drawFastVLine(6, 0, 8, matrix.Color(255, 0, 0));
+    matrix.drawFastVLine(7, 0, 8, matrix.Color(255, 0, 0));
+
+  } else {
+    matrix.drawFastVLine(4, 0, 8, 0);
+    matrix.drawFastVLine(5, 0, 8, 0);
+    matrix.drawFastVLine(6, 0, 8, 0);
+    matrix.drawFastVLine(7, 0, 8, 0);
+    i = i + 1;
+    if (i == 30){
+      i = 0;
+    }
+  }
+  matrix.show();
+  r = !r;
+  startRed = millis();
+  }
 }
 
 void text() {

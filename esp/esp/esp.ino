@@ -3,10 +3,10 @@
 const char* ssid = "AFRIKA";
 const char* password = "lolopolo";
 const char* host = "sluk.borec.cz";
+const int httpPort = 80;
 
 void setup() {
-  Serial.begin(9600); // Inicializace sériové komunikace
-  WiFi.mode(WIFI_STA);
+  Serial.begin(9600);
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -16,7 +16,6 @@ void setup() {
 
 void loop() {
   WiFiClient client;
-  const int httpPort = 80;
 
   if (!client.connect(host, httpPort)) {
     delay(1000);
@@ -25,33 +24,48 @@ void loop() {
 
   client.print(String("GET ") + "/esp/esp.php" + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" +
+               "X-ESP-Auth: lolopolo\r\n" +
                "Connection: close\r\n\r\n");
 
   delay(500);
 
-  String response = "";
-  boolean httpMain = false; // Indikátor, že jsme ve vnitřním obsahu <main>
-  boolean captureContent = false; // Indikátor, že zpracováváme obsah <main>
-
+  // Přeskakování HTTP hlaviček
   while (client.available()) {
-    char c = client.read();
-    if (c == '<') {
-      if (client.readStringUntil('>') == "main") { // Pokud jsme našli tag <main>
-        httpMain = true;
-        captureContent = true;
-      } else {
-        captureContent = false; // Ukončení záznamu obsahu po každém tagu
-      }
-    } else if (c == '>' && httpMain) {
-      httpMain = false;
-    } else if (captureContent) {
-      response += c;
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      break;
     }
   }
 
-  response.trim(); // Odstranění bílých znaků ze začátku a konce řetězce
+  // Čtení pouze obsahu <main>
+  String response = "";
+  bool inMainTag = false;
 
-  Serial.println(response); // Výpis čistého obsahu <main> na jednom řádku
+  while (client.available()) {
+    String line = client.readStringUntil('\n');
 
-  delay(5000); // Opakování každých 10 sekund
+    // Hledání začátku <main>
+    if (line.indexOf("<main>") != -1) {
+      inMainTag = true;
+      line = line.substring(line.indexOf("<main>") + 6); // Odstranit <main> z řetězce
+    }
+
+    // Hledání konce </main>
+    if (line.indexOf("</main>") != -1) {
+      line = line.substring(0, line.indexOf("</main>")); // Získat obsah před </main>
+      response += line;
+      inMainTag = false;
+      break;
+    }
+
+    // Ukládání obsahu uvnitř <main>
+    if (inMainTag) {
+      response += line;
+    }
+  }
+
+  response.trim();
+  Serial.println(response);
+
+  delay(10000); // Opakování každých 10 sekund
 }
